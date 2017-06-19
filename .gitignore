@@ -5,3 +5,9 @@
 
 # Maven
 /target/
+
+# JSON config files
+*.json
+
+# Properties files
+*.properties
