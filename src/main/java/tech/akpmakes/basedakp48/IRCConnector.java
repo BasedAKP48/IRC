@@ -13,10 +13,13 @@ import org.kitteh.irc.client.library.Client;
 import java.io.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Properties;
 
 public class IRCConnector {
+    private static Client _client;
+
     public static void main(String[] args) {
         ArgumentParser parser = ArgumentParsers.newArgumentParser("irc-connector")
                 .defaultHelp(true)
@@ -54,8 +57,6 @@ public class IRCConnector {
             e.printStackTrace();
             System.exit(0);
         }
-
-        Client client = null;
 
         System.out.println("Connecting to Firebase...");
         FirebaseApp.initializeApp(options);
@@ -105,15 +106,10 @@ public class IRCConnector {
                 if(config.server == null) { System.out.println("No server specified! Goodbye!"); System.exit(0); }
                 if(config.channels == null) { System.out.println("No channels specified! Goodbye!"); System.exit(0); }
 
-                if(client == null) {
+                if(_client == null) {
                     System.out.println("Connecting to IRC...");
-                    Client client = Client.builder().nick(config.nick).serverHost(config.server).build();
-                    client.getEventManager().registerEventListener(new IRCListener(finalCid));
-                    for(String channel : config.channels) {
-                        client.addChannel(channel);
-                    }
-
-                    addClientChildListener(rootRef, finalCid, client);
+                    _client = createClient(config.nick, config.server, config.channels, finalCid);
+                    addClientChildListener(rootRef, finalCid, _client);
                 } else {
                     // We should update the config here, I guess.
                     System.out.println("Caught an update to the config. Someday we'll know how to deal with this.");
@@ -130,7 +126,7 @@ public class IRCConnector {
         while ((line = System.console().readLine()) != null) {
             if(Objects.equals(line, "/quit")) {
                 System.out.println("Disconnecting...");
-                client.shutdown("Goodbye for now!");
+                _client.shutdown("Goodbye for now!");
                 System.out.println("Shutting down...");
                 System.exit(0);
             }
@@ -138,9 +134,19 @@ public class IRCConnector {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Disconnecting...");
-            client.shutdown("Goodbye for now!");
+            _client.shutdown("Goodbye for now!");
             System.out.println("Shutting down...");
         }));
+    }
+
+    private static Client createClient(String nick, String server, ArrayList<String> channels, String cid) {
+        Client client = Client.builder().nick(nick).serverHost(server).build();
+        client.getEventManager().registerEventListener(new IRCListener(cid));
+        for(String channel : channels) {
+            client.addChannel(channel);
+        }
+
+        return client;
     }
 
     private static void addClientChildListener(DatabaseReference rootRef, String cid, Client client) {
