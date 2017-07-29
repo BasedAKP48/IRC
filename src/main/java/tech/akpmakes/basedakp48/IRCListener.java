@@ -17,10 +17,9 @@ public class IRCListener {
 
     @Handler
     public void onMessage(ChannelMessageEvent event) {
-        DatabaseReference msgRef = this.ref.child("inbound_raw_messages").push();
+        System.out.println(event.getChannel().getName() + " | " + event.getActor().getMessagingName() + ": " + event.getMessage());
+        DatabaseReference msgRef = this.ref.child("incomingMessages").push();
         BasedAKP48ChatMessage msg = new BasedAKP48ChatMessage(event.getActor().getName(), this.cid, event.getChannel().getName(), event.getMessage());
         msgRef.setValue(msg);
-
-        System.out.println(event.getChannel().getName() + " | " + event.getActor().getMessagingName() + ": " + event.getMessage());
     }
 }

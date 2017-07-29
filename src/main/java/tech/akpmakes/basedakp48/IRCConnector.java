@@ -108,7 +108,7 @@ public class IRCConnector {
 
                 if(_client == null) {
                     System.out.println("Connecting to IRC...");
-                    _client = createClient(config.nick, config.server, config.channels, finalCid);
+                    _client = createClient(config, finalCid);
                     addClientChildListener(rootRef, finalCid, _client);
                 } else {
                     // We should update the config here, I guess.
@@ -139,10 +139,21 @@ public class IRCConnector {
         }));
     }
 
-    private static Client createClient(String nick, String server, ArrayList<String> channels, String cid) {
-        Client client = Client.builder().nick(nick).serverHost(server).build();
+    private static Client createClient(BasedAKP48ClientOptions options, String cid) {
+        Client.Builder builder = Client.builder();
+        builder.nick(options.nick).serverHost(options.server);
+
+        if(options.username != null) {
+            builder.user(options.username);
+        }
+
+        if(options.password != null) {
+            builder.serverPassword(options.password);
+        }
+
+        Client client = builder.build();
         client.getEventManager().registerEventListener(new IRCListener(cid));
-        for(String channel : channels) {
+        for(String channel : options.channels) {
             client.addChannel(channel);
         }
 
